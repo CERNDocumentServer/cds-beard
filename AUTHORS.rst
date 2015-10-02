@@ -26,4 +26,4 @@ Authors
 
 Invenio module to integrate beard.
 
-- CERN <info@invenio-software.org>
+- Grzegorz Jacenków <grzegorz.jacenkow@cern.ch>

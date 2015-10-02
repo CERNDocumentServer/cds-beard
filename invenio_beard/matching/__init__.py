@@ -22,7 +22,8 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-[pytest]
-addopts = --pep8 --ignore=docs --cov=invenio_beard --cov-report=term-missing
-pep8ignore =
-    tests/* ALL
+"""Module to match beard's output with the current database state."""
+
+from .match import do_matching
+
+__all__ = ("do_matching")
