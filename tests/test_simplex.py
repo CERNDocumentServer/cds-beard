@@ -26,7 +26,7 @@
 
 import unittest
 
-from invenio_beard.matching.simplex import _match_clusters
+from invenio_beard.matching.simplex import _solve_clusters
 
 
 class TestSimplex(unittest.TestCase):
@@ -38,7 +38,7 @@ class TestSimplex(unittest.TestCase):
         partition_before = {1: set(['A', 'B'])}
         partition_after = {2: set(['A', 'B'])}
 
-        match = _match_clusters(partition_before, partition_after)
+        match = _solve_clusters(partition_before, partition_after)
 
         self.assertEquals(match, ([(1, 2)], [], []))
 
@@ -48,7 +48,7 @@ class TestSimplex(unittest.TestCase):
         partition_before = {}
         partition_after = {1: set(['A', 'B'])}
 
-        match = _match_clusters(partition_before, partition_after)
+        match = _solve_clusters(partition_before, partition_after)
 
         self.assertEquals(match, ([], [1], []))
 
@@ -58,7 +58,7 @@ class TestSimplex(unittest.TestCase):
         partition_before = {1: set(['A', 'B'])}
         partition_after = {}
 
-        match = _match_clusters(partition_before,
+        match = _solve_clusters(partition_before,
                                 partition_after)
 
         self.assertEquals(match, ([], [], [1]))
@@ -69,7 +69,7 @@ class TestSimplex(unittest.TestCase):
         partition_before = {1: set(['A', 'B']), 2: set(['C', 'D', 'E'])}
         partition_after = {3: set(['A', 'C', 'E']), 4: set(['B', 'D'])}
 
-        match = _match_clusters(partition_before, partition_after)
+        match = _solve_clusters(partition_before, partition_after)
 
         self.assertEquals(match, ([(1, 4), (2, 3)], [], []))
 
@@ -79,7 +79,7 @@ class TestSimplex(unittest.TestCase):
         partition_before = {1: set(['A', 'B', 'C'])}
         partition_after = {2: set(['A', 'B']), 3: set(['C'])}
 
-        match = _match_clusters(partition_before, partition_after)
+        match = _solve_clusters(partition_before, partition_after)
 
         self.assertEquals(match, ([(1, 2)], [3], []))
 
@@ -89,6 +89,37 @@ class TestSimplex(unittest.TestCase):
         partition_before = {1: set(['A', 'B']), 2: set(['C'])}
         partition_after = {3: set(['A', 'B', 'C'])}
 
-        match = _match_clusters(partition_before, partition_after)
+        match = _solve_clusters(partition_before, partition_after)
 
         self.assertEquals(match, ([(1, 3)], [], [2]))
+
+    def test_strings_as_keys(self):
+        """Test clustering based on strings as keys."""
+
+        partition_before = {"1": set(['A', 'B']), "2": set(['C'])}
+        partition_after = {"3": set(['A', 'B', 'C'])}
+
+        match = _solve_clusters(partition_before, partition_after)
+
+        self.assertEquals(match, ([('1', '3')], [], ['2']))
+
+    def test_different_types_as_keys(self):
+        """Test clustering based on strings as keys."""
+
+        partition_before = {1: set(['A', 'B']), "2": set(['C'])}
+        partition_after = {"3": set(['A', 'B', 'C']), 4: set(['E', 'F'])}
+
+        match = _solve_clusters(partition_before, partition_after)
+
+        self.assertEquals(match, ([(1, '3')], [4], ['2']))
+
+    def test_many_virtual_agents(self):
+        """Test clustering based on strings as keys."""
+
+        partition_before = {1: set(['A'])}
+        partition_after = {1: set(['A', 'B', 'C']), 2: set(['D']),
+                           "3": set(['E', 'F'])}
+
+        match = _solve_clusters(partition_before, partition_after)
+
+        self.assertEquals(match, ([(1, 1)], ['3', 2], []))

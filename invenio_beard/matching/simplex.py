@@ -27,31 +27,31 @@ import numpy as np
 from scipy.optimize import linprog
 
 
-def _cost_matrix(partition_before, partition_after):
+def _cost_matrix(clusters_before, clusters_after):
     """Compute costs for the matching solver.
 
     Receives two partitions representing clusters in the state before
-    and after running Beard algorithm. Each before-the-state-signature is
-    being used to calculate the cost function against each of after-the-state-
-    signatures. The cost function is calculating the overlap between
-    members of the two given sets.
+    and after. Each the-state-before cluster is being used to calculate
+    the cost function against each of cluster from the the-state-after.
+    The cost function is calculating the overlap between members of the
+    two given sets.
 
-    :param partition_before:
-        A dictionary of sets representing clusters of the signatures
-        before running machine learning algorithm (Beard).
-
-        Example:
-            partition_before = {1: set(['A', 'B']), 2: set(['C'])}
-
-    :param partition_after:
-        A dictionary of sets representing clusters of the signatures
-        after running machine learning algorithm (Beard).
+    :param clusters_before:
+        A dictionary of sets representing clusters from the-state-before,
+        with enumerated keys.
 
         Example:
-            partition_after = {3: set(['B']), 4: set(['A', 'C'])}
+            clusters_before = {1: set(['A', 'B']), 2: set(['C'])}
+
+    :param clusters_after:
+        A dictionary of sets representing clusters from the-state-after,
+        with enumerated keys.
+
+        Example:
+            clusters_after = {1: set(['B']), 2: set(['A', 'C'])}
 
     :return:
-        A matrix of (partition_before + partition_after) x (partition_after)
+        A matrix of (clusters_before + clusters_after) x (clusters_after)
         size containing all costs values for each pair of clusters.
 
         Example:
@@ -61,25 +61,21 @@ def _cost_matrix(partition_before, partition_after):
              [-0.25       -0.16666667]]
     """
 
-    cost = np.zeros((len(partition_before), len(partition_after)))
+    cost = np.zeros((len(clusters_before), len(clusters_after)))
 
-    # Keys in the dictionaries can be in any format.
-    for index_before, cluster_before in enumerate(
-                                            partition_before.viewvalues()):
-        for index_after, cluster_after in enumerate(
-                                            partition_after.viewvalues()):
-
+    for index_before, cluster_before in clusters_before.items():
+        for index_after, cluster_after in clusters_after.items():
             cost[index_before, index_after] = -len(
                 set.intersection(
                     set(cluster_before), set(cluster_after))) - 1. / \
-                (len(partition_after) * (1 + len(
+                (len(clusters_after) * (1 + len(
                     set.symmetric_difference(set(cluster_before),
                                              set(cluster_after)))))
 
     return cost
 
 
-def _match_clusters(partition_before, partition_after, maxiter=5000):
+def _solve_clusters(clusters_before, clusters_after, maxiter=5000):
     """Solve the matching problem using simplex method.
 
     Receives a cost matrix produced by compute_cost_function_matrix.
@@ -87,19 +83,17 @@ def _match_clusters(partition_before, partition_after, maxiter=5000):
     the best match for each cluster from the-state-before with a
     cluster from the-state-after.
 
-    :param partition_before:
-        A dictionary of sets representing clusters of signatures
-        before running machine learning algorithm (Beard).
+    :param clusters_before:
+        A dictionary of sets representing clusters from the-state-before.
 
         Example:
-            partition_before = {1: set(['A', 'B']), 2: set(['C'])}
+            clusters_before = {1: set(['A', 'B']), 2: set(['C'])}
 
-    :param partition_after:
-        A dictionary of sets representing clusters of signatures
-        after running machine learning algorithm (Beard).
+    :param clusters_after:
+        A dictionary of sets representing clusters from the-state-after.
 
         Example:
-            partition_after = {3: set(['B']), 4: set(['A', 'C'])}
+            clusters_after = {3: set(['B']), 4: set(['A', 'C'])}
 
     :param maxiter:
         An optional parameter to define the maximum number of
@@ -113,13 +107,26 @@ def _match_clusters(partition_before, partition_after, maxiter=5000):
             ([(1, 2)], [3], [])
     """
 
-    # Append virtual clusters (agents).
-    for index in partition_after:
-        partition_before['v' + str(index)] = set()
+    len_before = len(clusters_before)
+    len_after = len(clusters_after)
+
+    # Copies of the given dictionaries, as dictionaries with enumerated keys.
+    clusters_before_copy = {}
+    cluster_after_copy = {}
+    key_map = []
+
+    for index, key in enumerate(clusters_before):
+        clusters_before_copy[index] = clusters_before[key]
+        key_map.append(key)
+
+    for index, key in enumerate(clusters_after):
+        cluster_after_copy[index] = clusters_after[key]
+        clusters_before_copy[len_before + index] = set()
+        key_map.append(key)
 
     # Compute the cost matrix.
-    cost = _cost_matrix(partition_before,
-                        partition_after)
+    cost = _cost_matrix(clusters_before_copy,
+                        cluster_after_copy)
 
     n_cluster_before, n_cluster_after = cost.shape
     n_edges = n_cluster_before * n_cluster_after
@@ -149,28 +156,24 @@ def _match_clusters(partition_before, partition_after, maxiter=5000):
                        b_eq=b_eq,
                        options={'maxiter': maxiter})
 
-    # Partition before-the-state has already appened agents.
-    len_first = len(partition_before) - len(partition_after)
-    len_second = len(partition_after)
-
     bucket_pairs = []
     bucket_new = []
     bucket_remove = []
 
-    for index_first in range(len_first + len_second):
-        for index_second in range(len_second):
-            if solution.x[index_first * len_second + index_second] == 1:
-                if index_first < len_first:
+    for index_first in range(len_before + len_after):
+        for index_second in range(len_after):
+            if solution.x[index_first * len_after + index_second] == 1:
+                if index_first < len_before:
                     bucket_pairs.append((
-                        partition_before.keys()[index_first],
-                        partition_after.keys()[index_second]))
+                        key_map[index_first],
+                        key_map[len_before + index_second]))
                 else:
                     bucket_new.append(
-                        partition_after.keys()[index_second])
+                        key_map[len_before + index_second])
                 break
         else:
-            if index_first < len_first:
+            if index_first < len_before:
                 bucket_remove.append(
-                    partition_before.keys()[index_first])
+                    key_map[index_first])
 
     return bucket_pairs, bucket_new, bucket_remove

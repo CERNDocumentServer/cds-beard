@@ -22,35 +22,34 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-from .simplex import _match_clusters
+from .simplex import _solve_clusters
 
 from .subproblems import _divide_into_subproblems
 
 
-def do_matching(signatures_before, signatures_after):
-    """Split the given signatures into subproblems, then match.
+def match_clusters(clusters_before, clusters_after):
+    """Split the given clusters into subproblems, then match.
 
-    Receives two dictionaries, representing clustered signatures
-    before and after running the machine learning algorithm (Beard).
-    The signatures_before are clustered by authors pointing to the same
-    profile, where signatures_after is clustered by Beard.
-    The keys in the given dictionaries must be different.
+    The method matches provied clusters into pairs of clusters,
+    clusters that are new and clusters to remove.
+    Values of the provided clusters (dictionaries) must be in the
+    form of lists.
 
-    :param signatures_before:
-        A dictionary containing clusterd signatures by the same profile.
-
-        Example:
-            signatures_before = {"1": ["A"], "2": ["B"], "3": ["C"]}
-
-    :param signatures_after:
-        A dictionary, which is an output of Beard.
+    :param clusters_before:
+        A dictionary containing clustered data from the-state-before.
 
         Example:
-            signatures_after = {"4": ["A"], "5": ["B"], "6": ["D"]}
+            clusters_before = {"1": ["A", "B"], "2": ["C"], "3": ["D"]}
+
+    :param clusters_after:
+        A dictionary containing clustered data from the-state-after.
+
+        Example:
+            clusters_after = {"4": ["A", "B"], "5": ["C"], "6": ["E"]}
 
     :return:
         The method returns three buckets (lists) containing the keys of matched
-        clusters (as pairs), new clusters and these to remove.
+        clusters (as pairs), clusters to add and clusters to remove.
 
         Example:
             ([(1, 4), (2, 5)], [6], [3])
@@ -60,20 +59,45 @@ def do_matching(signatures_before, signatures_after):
     bucket_new = []
     bucket_removed = []
 
-    for subproblem_before, subproblem_after in _divide_into_subproblems(
-                                                    signatures_before,
-                                                    signatures_after):
+    # Copy and rename keys of the given dictionaries to avoid a key collision.
+    clusters_before_copy = {}
+    clusters_after_copy = {}
+    key_map = {}
 
-        matching_result = _match_clusters(subproblem_before,
+    for key in clusters_before:
+        new_key = 'before_%r' % key
+        key_map[new_key] = key
+        clusters_before_copy[new_key] = clusters_before[key]
+
+    for key in clusters_after:
+        new_key = 'after_%r' % key
+        key_map[new_key] = key
+        clusters_after_copy[new_key] = clusters_after[key]
+
+    for subproblem_before, subproblem_after in _divide_into_subproblems(
+                                                    clusters_before_copy,
+                                                    clusters_after_copy):
+
+        matching_result = _solve_clusters(subproblem_before,
                                           subproblem_after)
 
         if matching_result[0]:
-            bucket_matched.append(matching_result[0])
+            bucket_matched.extend(matching_result[0])
 
         if matching_result[1]:
-            bucket_new.append(matching_result[1])
+            bucket_new.extend(matching_result[1])
 
         if matching_result[2]:
-            bucket_removed.append(matching_result[2])
+            bucket_removed.extend(matching_result[2])
+
+    # Return the original key names.
+    for index, pair in enumerate(bucket_matched):
+        bucket_matched[index] = (key_map[pair[0]], key_map[pair[1]])
+
+    for index, new in enumerate(bucket_new):
+        bucket_new[index] = key_map[new]
+
+    for index, removed in enumerate(bucket_removed):
+        bucket_removed[index] = key_map[removed]
 
     return bucket_matched, bucket_new, bucket_removed

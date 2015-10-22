@@ -24,6 +24,6 @@
 
 """Module to match beard's output with the current database state."""
 
-from .match import do_matching
+from .match import match_clusters
 
-__all__ = ("do_matching")
+__all__ = ["match_clusters"]

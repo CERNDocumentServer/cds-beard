@@ -66,16 +66,14 @@ def _append_children(node, clusters_before, clusters_after, clusters_reversed,
 
     :param solution_before:
         A dictionary of sets containing signatures being selected as the
-        part of the currently generating subproblem in the state before
-        running beard.
+        part of the currently generating subproblem in the-state-before.
 
         Example:
             solution_before = {1: set(['A, B'])}
 
     :param solution_after:
         A dictionary of sets containing signatures being selected as the
-        part of the currently generating subproblem in the state after
-        running beard.
+        part of the currently generating subproblem in the-state-after.
 
         Example:
             solution_after = {3: set(['A, B'])}
@@ -193,16 +191,14 @@ def _check_node(node, clusters_before, clusters_after,
 
     :param solution_before:
         A dictionary of sets containing signatures being selected as the
-        part of the currently generating subproblem in the state before
-        running beard.
+        part of the currently generating subproblem in the-state-before.
 
         Example:
             solution_before = {1: set(['A, B'])}
 
     :param solution_after:
         A dictionary of sets containing signatures being selected as the
-        part of the currently generating subproblem in the state after
-        running beard.
+        part of the currently generating subproblem in the-state-after.
 
         Example:
             solution_after = {3: set(['A, B'])}
@@ -235,11 +231,11 @@ def _check_node(node, clusters_before, clusters_after,
 def _divide_into_subproblems(clusters_before, clusters_after):
     """Divide the clusters into subproblems.
 
-    Receives two dictionaries representing clustered signatures in the
-    state before running beard algorithm and in the state after.
-    In order not to check every possible case during matching the clusters,
-    the method splits clusters into lists, which are not dependent to each
-    other and thus can be treated subproblems for the matching algorithm.
+    Receives two dictionaries representing clustered data in the-state-before
+    and in the-state-after. In order not to check every possible case during
+    matching the clusters, the method splits clusters into lists, which are not
+    dependent to each other and thus can be treated subproblems for the
+    matching algorithm.
 
     :param clusters_before:
         A dictionary containing unique keys and signatures clustered into
@@ -326,13 +322,21 @@ def _dictionary_merge(dictionary_left, dictionary_right):
 def _dictionary_reverse(dictionary_given):
     """Swap keys with values in the given dictionary.
 
+    The given dictionary is reversed from key-value relation to
+    value-key relation by creating a new dictionary. Since any
+    signature cannot belong to more than one author, the dictionary
+    will not have any occurrences of a signature more than once.
+    However in case of more than one occurrence the new value will
+    override the old value.
+
     :param dictionary_given:
         A standard dictionary with keys and values with
         len() attribute. In case of TypeError, the value
-        will be skipped.
+        will be skipped. The values must be provided in the
+        form of lists.
 
         Example:
-            dictionary_given = {1: 'A', 2: ['B', 'C']}
+            dictionary_given = {1: ['A'], 2: ['B', 'C']}
 
     :return:
         A dictionary of swapped values with keys.
