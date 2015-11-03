@@ -1,0 +1,3 @@
+[submodule "beard-docker"]
+	path = beard-docker
+	url = https://github.com/inspirehep/beard-docker
