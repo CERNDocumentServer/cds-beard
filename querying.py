@@ -200,25 +200,22 @@ def create_record(record_id):
         year = False
     
     try:
-        # Filter 'None' values
+        # Filter 'None' values in authors and collaborations
         # Example: a record has field 700 (co-author) but no 100 (author),
-        # 'authors': [None, ...]
+        # 'authors': [None, ...]; or
+        # the record is part of a collaboration, like "ATLAS Collaboration"
         authors = [
-            author for author in response["authors.full_name"] if author]
+            author for author in response["authors.full_name"] if
+            author and
+            not _is_collaboration(author)]
         
-        # Check if the given paper is a part of a collaboration.
-        collaborations = [
-            author for author in authors if _is_collaboration(author)]
-        collaboration = True if collaborations else False
-
         # Return record if given paper contains "real" authors only
-        if len(authors) > len(collaborations):
+        if authors: 
             return {
                 "publication_id": str(record_id),
                 "authors": authors,
                 "title": response.get("title.title", ""),
-                "year": year,
-                "collaboration": collaboration 
+                "year": year
             }
     except KeyError:
         pass

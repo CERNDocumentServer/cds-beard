@@ -20,7 +20,6 @@ class TestQuerying(unittest.TestCase):
         self.assertEqual(record["authors"], ["Frazer, W R", "Gunion, J F"])
         self.assertEqual(record["year"], "1980")
         self.assertEqual(record["title"], "Target mass corrections in QCD")
-        self.assertEqual(record["collaboration"], False)
         
         # Test record containing a range as year, e.g. 1958-1960
         record = create_record(223456)
@@ -45,9 +44,7 @@ class TestQuerying(unittest.TestCase):
         # Test record which is part of a collaboration and contains "real" author
         record = create_record(1255874)
         self.assertEqual(record["publication_id"], "1255874")
-        self.assertEqual(
-            record["authors"], ["ATLAS Collaboration", "Joao Pequenao"]) 
-        self.assertEqual(record["collaboration"], True)
+        self.assertEqual(record["authors"], ["Joao Pequenao"]) 
 
         # Test non-existing record
         record = create_record(0)
