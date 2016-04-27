@@ -105,10 +105,12 @@ def block_clustering_signatures(signatures):
     for signature in signatures:
         phonetic_block = create_signature_block_memoized(
             signature["author_name"])
-        if phonetic_block in signatures_by_blocks:
-            signatures_by_blocks[phonetic_block].append(signature)
-        else:
-            signatures_by_blocks[phonetic_block] = [signature]
+
+        if phonetic_block: 
+            if phonetic_block in signatures_by_blocks:
+                signatures_by_blocks[phonetic_block].append(signature)
+            else:
+                signatures_by_blocks[phonetic_block] = [signature]
     print "{0} signature cluster created.".format(len(signatures_by_blocks))
 
     return signatures_by_blocks
