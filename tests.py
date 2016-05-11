@@ -55,12 +55,17 @@ class TestQuerying(unittest.TestCase):
         # Test signature containing author without affiliation
         signatures = create_signatures(123456)
         self.assertEqual(len(signatures), 2)
-        self.assertEqual(signatures[0]["signature_id"], "123456_Frazer, W R")
+        # Since we add an auto-increment id to the signature_id:
+        # self.assertEqual(signatures[0]["signature_id"], "123456_Frazer, W R")
+        self.assertTrue(
+            signatures[0]["signature_id"].startswith("123456_Frazer, W R"))
         self.assertEqual(signatures[0]["publication_id"], "123456")
         self.assertEqual(signatures[0]["author_name"], "Frazer, W R")
         self.assertEqual(signatures[0]["author_affiliation"], "")
-        
-        self.assertEqual(signatures[1]["signature_id"], "123456_Gunion, J F")
+         
+        # self.assertEqual(signatures[1]["signature_id"], "123456_Gunion, J F")
+        self.assertTrue(
+            signatures[1]["signature_id"].startswith("123456_Gunion, J F"))
         self.assertEqual(signatures[1]["publication_id"], "123456")
         self.assertEqual(signatures[1]["author_name"], "Gunion, J F")
         self.assertEqual(signatures[1]["author_affiliation"], "")

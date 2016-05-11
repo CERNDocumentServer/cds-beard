@@ -5,6 +5,8 @@ import re
 
 from beard.clustering import block_phonetic
 
+from itertools import count
+
 from json import load
 
 try:
@@ -20,6 +22,9 @@ except ImportError:
     from invenio.bibfield import get_record
     from invenio.search_engine import perform_request_search
     from invenio.search_engine_utils import get_fieldvalues
+
+
+consecutive_id = count()
 
 
 def _get_record(record_id, source):
@@ -38,7 +43,7 @@ def _get_record(record_id, source):
 
 def _create_signature_id(record_id, author):
     """Create signature-id for author in record with record_id."""
-    return "{0}_{1}".format(str(record_id), author)
+    return "{0}_{1}_{2}".format(str(record_id), author, next(consecutive_id))
 
 
 def _create_signature(record_id, author):
