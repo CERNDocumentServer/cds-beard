@@ -7,8 +7,6 @@ from beard.clustering import block_phonetic
 
 from itertools import count
 
-from json import load
-
 try:
     from invenio.bibfield import get_record
     from invenio.search_engine import perform_request_search
@@ -102,7 +100,7 @@ def get_record_ids(
 
 
 def get_signatures(record_ids=None):
-    """Get all signatures from given record_ids."""
+    """Get all signatures from given list of record_ids."""
     # Get all record-ids for clustering
     if not record_ids:
         record_ids = get_record_ids()
@@ -115,6 +113,23 @@ def get_signatures(record_ids=None):
     print "{0} signatures created.".format(len(signatures))
 
     return signatures
+
+
+def get_records(record_ids=None):
+    """Get all records from given list of record_ids."""
+    if not record_ids:
+        record_ids = get_record_ids()
+    print "{0} record-ids requested.".format(len(record_ids))
+    
+    # Get all records
+    records = []
+    for record_id in record_ids:
+        record = create_record(record_id)
+        if record:
+            records.append(record)
+    print "{0} records created.".format(len(records))
+  
+    return records
 
 
 def create_signature_blocks(record_id):
