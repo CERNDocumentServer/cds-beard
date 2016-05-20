@@ -2,14 +2,28 @@
 
 Export the clustered records and signatures using the utils module and run
 beard on this set of data.
+
+Requires Beard installation.
 """
 
 from querying import (
     create_record,
-    create_signature_block,
     create_signatures,
     get_record_ids,
-    get_signatures) 
+    get_signatures)
+
+try:
+    from invenio.search_engine_utils import get_fieldvalues
+except ImportError:
+    import sys
+    sys.path.extend([
+        "/usr/lib64/python2.6/site-packages/",
+        "/usr/lib/python2.6/site-packages/"])
+    from invenio.search_engine_utils import get_fieldvalues
+
+from beard.clustering import block_phonetic
+
+from numpy import np
 
 
 def memoize(fn):
@@ -24,16 +38,67 @@ def memoize(fn):
     return memoizer
 
 
+def create_signature_blocks(record_id):
+    """Create signature blocks given the record_id.
+
+    :param int record_id: record-id
+        Example:
+            record_id = 1369415
+
+    :return: list of strings representing phonetic blocks for author's and
+        co-author's full names. Empty list, if no author's found
+        Example:
+            [u'ELj', u'MCLAGHLANm', u'VARBASTj']
+    """
+    signature_blocks = []
+
+    author = get_fieldvalues(record_id, "100__a")
+    coauthors = get_fieldvalues(record_id, "700__a")
+
+    authors = []
+    authors.extend(author)
+    authors.extend(coauthors)
+
+    for author in authors:
+        signature_block = create_signature_block(author)
+        if signature_block:
+            signature_blocks.append(signature_block)
+
+    return signature_blocks
+
+
+def create_signature_block(author_name):
+    """Create signature block for given author_name.
+
+    :param str author_name: author's full name
+        Example:
+            author_name = "Ellis, John R"
+
+    :return: string representing phonetic block for full_name
+        Example:
+            u'ELj'
+    """
+    try:
+        name = {'author_name': author_name}
+        signature_block = block_phonetic(
+            np.array([name], dtype=np.object).reshape(-1, 1),
+            threshold=0,
+            phonetic_algorithm='nysiis')
+        return signature_block[0]
+    except (IndexError, KeyError) as err:
+        print "Couldn't create signature: {0} in '{1}'".format(err, name)
+
+
 def block_clustering(record_ids=None):
     """Cluster signatures and records by author's full name phonetic blocks.
-    
+
     Creates signatures and records given the record-ids. For each author's
     full name, a phonetic block is created. The signatures and records are
     clustered by the phonetic blocks in which they occur.
 
     :param list record_ids: list of record-ids classified for clustering.
         Requests record-ids if None
-        Example:      
+        Example:
             record_ids = [1369415, 1638463, 1112288, 1181000]
 
     :return: tuple of dictionaries, representing clustered records and
@@ -71,7 +136,7 @@ def block_clustering(record_ids=None):
 
 def block_clustering_signatures(signatures):
     """Cluster signatures by author's full name phonetic blocks.
-    
+
     :param list signatures: list of signatures
         Example:
             [{'publication_id': '1369415',
@@ -106,7 +171,7 @@ def block_clustering_signatures(signatures):
         phonetic_block = create_signature_block_memoized(
             signature["author_name"])
 
-        if phonetic_block: 
+        if phonetic_block:
             if phonetic_block in signatures_by_blocks:
                 signatures_by_blocks[phonetic_block].append(signature)
             else:
@@ -118,7 +183,7 @@ def block_clustering_signatures(signatures):
 
 def block_clustering_records(signatures_by_blocks):
     """Cluster records by author's full name phonetic blocks.
-     
+
     :param dict signatures_by_blocks: dictionary, representing clustered
         signatures by phonetic blocks
         Example:
