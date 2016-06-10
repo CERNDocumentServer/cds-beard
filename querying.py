@@ -260,15 +260,21 @@ def get_authority_ids(author):
         for prefix in prefixes.iterkeys():
             subfield = subfield.lower()
             id_ = subfield.replace(prefix, "")
-            if subfield.startswith(prefix) and id_:
-                # Type of authority id
-                prefix_normalized = prefixes[prefix]
-                if prefix_normalized == "cern":
-                    result["cern_id"] = id_
-                elif prefix_normalized == "inspire":
-                    result["inspire_id"] = id_
-                elif prefix_normalized == "cds":
-                    result["cds_id"] = id_
+            if subfield.startswith(prefix):
+                try:
+                    if int(id_) > 0:
+                        # E.g. id_ = "-1"
+                        # Type of authority id
+                        prefix_normalized = prefixes[prefix]
+                        if prefix_normalized == "cern":
+                            result["cern_id"] = id_
+                        elif prefix_normalized == "inspire":
+                            result["inspire_id"] = id_
+                        elif prefix_normalized == "cds":
+                            result["cds_id"] = id_
+                except ValueError:
+                    # E.g. id_ = ""
+                    pass
 
     return result
 

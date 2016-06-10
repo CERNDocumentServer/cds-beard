@@ -324,6 +324,7 @@ class TestAuthorityIds(unittest.TestCase):
             ([('u', 'INSPIRE-123')], ' ', ' ', '', 1),
             ([('0', 'INSPIRE-')], ' ', ' ', '', 1),
             ([('0', 'CERN-')], ' ', ' ', '', 1),
+            ([('0', 'CCID--1')], ' ', ' ', '', 1)
         ]
         authority_ids_expected = {}
 
