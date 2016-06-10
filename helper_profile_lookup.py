@@ -1,7 +1,13 @@
 """Helper to create look-up giving a `CERN People` collection dump.
 
 The look-up is used for linking Beard clusters to CDS profiles by matching
-authority ids. It allows to look-up a profile id by giving a authority id.
+authority ids. It allows to look-up the record id for an author profile by
+giving a authority id.
+
+Example:
+    lookup['AUTHOR|(SzGeCERN)389900'] --> '2108556'
+    lookup['AUTHOR|(INSPIRE)INSPIRE-00146525'] --> '2108556'
+    lookup['AUTHOR|(CDS)2108556'] --> '2108556'
 """
 
 import argparse
@@ -11,6 +17,9 @@ from json import dump, load
 
 def get_authority_ids(record):
     """Get authority ids (system control numbers) of given record.
+
+    Additionally, the record id (recid) is extracted as CDS authority id,
+    e.g. '2108556' -> 'AUTHOR|(CDS)2108556'.
 
     :param dict record: representing meta data of the record
         Example:
@@ -31,6 +40,10 @@ def get_authority_ids(record):
         result.extend(authority_ids)
 
     result = [item["value"] for item in result]
+
+    # Add recid as CDS authority id
+    result.append("AUTHOR|(CDS){0}".format(record["recid"]))
+
     return result
 
 
