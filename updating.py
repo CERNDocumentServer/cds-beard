@@ -64,7 +64,8 @@ def update_record(record_id, authors):
             authors = {'Ellis, John': '2108556'}
 
     :return: string representing the record XML element containing
-        author (`100`) and/or co-author (`700`) datafields.
+        author (`100`) and/or co-author (`700`) datafields. Empty string if
+        nothing to update
         Example:
             '<record>
                 <controlfield tag="001">2150939</controlfield>
@@ -82,36 +83,45 @@ def update_record(record_id, authors):
     record_coauthors = record_get_field_instances(record, "700")
 
     if len(record_author) > 1:
-        print ("Oops: several '100' (main author) fields have been found in"
+        print ("Oops: several '100' (main author) fields have been found in "
                "record '{0}'".format(record_id))
         return ""
 
     datafields = ""
     author = False
     for author_field in record_author:
-        author_name = field_get_subfield_values(author_field, 'a')[0]
         try:
-            cds_id = authors[author_name]
-            if extend_author_field(author_field, cds_id):
-                datafields += field_xml_output(author_field, "100")
-                author = True
-        except KeyError:
+            author_name = field_get_subfield_values(author_field, 'a')[0]
+            try:
+                cds_id = authors[author_name]
+                if extend_author_field(author_field, cds_id):
+                    datafields += field_xml_output(author_field, "100")
+                    author = True
+            except KeyError:
+                pass
+        except IndexError:
+            # Author field (`100`) does not have subfield `a`
             pass
 
     if len(authors) > 1 or not author:
         for coauthor_field in record_coauthors:
-            coauthor_name = field_get_subfield_values(coauthor_field, 'a')[0]
             try:
-                cds_id = authors[coauthor_name]
-                if extend_author_field(coauthor_field, cds_id):
-                    author = True
-            except KeyError:
+                coauthor_name = field_get_subfield_values(
+                    coauthor_field, 'a')[0]
+                try:
+                    cds_id = authors[coauthor_name]
+                    if extend_author_field(coauthor_field, cds_id):
+                        author = True
+                except KeyError:
+                    pass
+            except IndexError:
+                # Co-author field (`700`) does not have subfield `a`
                 pass
             datafields += field_xml_output(coauthor_field, "700")
 
     # Nothing to update
     if not author:
-        print "No authors to update in record '{0}'".format(record_id)
+        # print "No authors to update in record '{0}'".format(record_id)
         return ""
 
     record = ('<record><controlfield tag="001">{0}</controlfield>{1}'
@@ -161,7 +171,7 @@ def swap_clusters(linked_clusters):
 
 
 def update(input_clusters, output_updates_dir, chunk_size=1000, upload=False):
-    """Update authors which are linked to CDS profiles. 
+    """Update authors which are linked to CDS profiles.
 
     :param str input_clusters: file path to JSON file containing the
         linked clusters for updating the signatures
@@ -182,22 +192,23 @@ def update(input_clusters, output_updates_dir, chunk_size=1000, upload=False):
     # Update records and write to (multiple) file(s)
     file_handle = None
     chunk = 0
-    number_of_records = 0
+    number_of_records_in_chunk = 0
     for cluster_id in clusters_swapped:
-        if not number_of_records % chunk_size:
+        if not number_of_records_in_chunk % chunk_size:
             if file_handle:
                 file_handle.close()
             file_path = join(output_updates_dir,
                              "record_updates_{0}.xml".format(chunk))
             file_handle = open(file_path, "w")
             chunk += 1
+            number_of_records_in_chunk = 1  # Reset counter
 
         # cluster_id is representing the record id
         record_id = int(cluster_id)
         record = update_record(record_id, clusters_swapped[cluster_id])
         if record:
             file_handle.write(record)
-            number_of_records += 1
+            number_of_records_in_chunk += 1
 
     file_handle.close()
 
